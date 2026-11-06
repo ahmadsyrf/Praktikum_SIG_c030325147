@@ -5,16 +5,24 @@
 
 @section('content')
 
-<h1 class="text-2xl font-bold mb-4">
-    Tambah Sekolah
-</h1>
+<div class="bg-white rounded-xl shadow-md p-6">
 
-<form method="POST" action="{{ route('admin.sekolah.store') }}">
-    @csrf
+    <h1 class="text-2xl font-bold mb-4 text-gray-800">
+        Tambah Sekolah
+    </h1>
 
-    @include('admin.sekolah._form', [
-        'sekolah' => new \App\Models\Sekolah
-    ])
-</form>
+    <p class="text-gray-600 mb-6">
+        Silakan isi formulir berikut untuk menambahkan data sekolah baru.
+    </p>
+
+    <form method="POST" action="{{ route('dinas.sekolah.store') }}">
+        @csrf
+
+        @include('admin.sekolah._form', [
+            'sekolah' => new \App\Models\Sekolah
+        ])
+    </form>
+
+</div>
 
 @endsection

@@ -8,7 +8,7 @@
 <div class="flex items-center justify-between mb-4">
     <h1 class="text-2xl font-bold">Data Sekolah</h1>
 
-    <a href="{{ route('admin.sekolah.create') }}"
+    <a href="{{ route('dinas.sekolah.create') }}"
        class="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800">
         + Tambah Sekolah
     </a>
@@ -62,14 +62,14 @@
 
                     <td class="p-3 whitespace-nowrap">
                         <a
-                            href="{{ route('admin.sekolah.edit', $s) }}"
+                            href="{{ route('sekolah.edit', $s) }}"
                             class="text-blue-700 hover:underline">
                             Ubah
                         </a>
 
                         <form
                             method="POST"
-                            action="{{ route('admin.sekolah.destroy', $s) }}"
+                            action="{{ route('dinas.sekolah.destroy', $s) }}"
                             onsubmit="return confirm('Hapus data ini?')"
                             class="inline">
 

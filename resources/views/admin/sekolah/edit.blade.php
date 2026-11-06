@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Ubah Sekolah')
@@ -9,9 +8,12 @@
     Ubah Sekolah
 </h1>
 
+{{-- Tab navigasi Data Sekolah dan Profil Sekolah --}}
+@include('sekolah._tab', ['sekolah' => $sekolah])
+
 <form
     method="POST"
-    action="{{ route('admin.sekolah.update', $sekolah) }}"
+    action="{{ route('sekolah.update', $sekolah) }}"
 >
     @csrf
     @method('PUT')

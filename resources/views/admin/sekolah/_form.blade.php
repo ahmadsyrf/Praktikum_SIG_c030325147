@@ -1,4 +1,3 @@
-
 @php
     $teks = [
         'npsn' => 'NPSN (8 digit)',
@@ -30,6 +29,7 @@
                     id="{{ $name }}"
                     name="{{ $name }}"
                     value="{{ old($name, $sekolah->$name) }}"
+                    @readonly($name === 'npsn' && auth()->user()->isSekolah())
                     class="{{ $cls }}"
                 >
 
@@ -131,7 +131,6 @@
 
         </div>
 
-        {{-- Tombol GPS --}}
         <div class="space-y-2">
             <button
                 type="button"
@@ -154,7 +153,9 @@
             </button>
 
             <a
-                href="{{ route('admin.sekolah.index') }}"
+                href="{{ auth()->user()->isDinas()
+                    ? route('dinas.sekolah.index')
+                    : route('dashboard') }}"
                 class="px-5 py-2 bg-gray-300 rounded"
             >
                 Batal
@@ -195,27 +196,21 @@
         draggable: true
     }).addTo(map);
 
-    // Mengisi koordinat
     function isiKoordinat(lat, lng) {
         latInput.value = lat.toFixed(7);
         lngInput.value = lng.toFixed(7);
     }
 
-    // Klik peta untuk menentukan lokasi
     map.on('click', function (e) {
         marker.setLatLng(e.latlng);
-
         isiKoordinat(e.latlng.lat, e.latlng.lng);
     });
 
-    // Geser marker untuk menentukan lokasi
     marker.on('dragend', function () {
         const posisi = marker.getLatLng();
-
         isiKoordinat(posisi.lat, posisi.lng);
     });
 
-    // Jika koordinat diketik secara manual
     [latInput, lngInput].forEach(function (el) {
         el.addEventListener('change', function () {
             const lat = parseFloat(latInput.value);
@@ -235,13 +230,11 @@
         });
     });
 
-    // Fitur GPS
     tombolLokasi.addEventListener('click', function () {
 
         if (!navigator.geolocation) {
             statusLokasi.textContent =
                 'Browser tidak mendukung fitur lokasi.';
-
             return;
         }
 
@@ -255,13 +248,8 @@
                 const lat = posisi.coords.latitude;
                 const lng = posisi.coords.longitude;
 
-                // Mengisi koordinat
                 isiKoordinat(lat, lng);
-
-                // Memindahkan marker
                 marker.setLatLng([lat, lng]);
-
-                // Memusatkan peta ke lokasi GPS
                 map.setView([lat, lng], 16);
 
                 statusLokasi.textContent =

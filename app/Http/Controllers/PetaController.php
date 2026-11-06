@@ -16,7 +16,7 @@ class PetaController extends Controller
     // Mengambil data sekolah dalam format GeoJSON
     public function geojson(Request $request)
     {
-        $features = Sekolah::query()
+        $features = Sekolah::with('profil')
 
             // Filter berdasarkan jenjang sekolah
             ->when($request->jenjang, function ($query, $jenjang) {
@@ -56,6 +56,18 @@ class PetaController extends Controller
                         'alamat' => $sekolah->alamat,
                         'kecamatan' => $sekolah->kecamatan,
                         'telepon' => $sekolah->telepon,
+
+                        // Data profil sekolah
+                        'kepala_sekolah' => $sekolah->profil?->kepala_sekolah,
+                        'akreditasi' => $sekolah->profil?->akreditasi,
+                        'jumlah_siswa' => $sekolah->profil?->jumlah_siswa,
+                        'jumlah_guru' => $sekolah->profil?->jumlah_guru,
+
+                        // URL halaman profil publik
+                        'profil_url' => route(
+                            'sekolah.profil.public',
+                            $sekolah->id
+                        ),
                     ],
                 ];
             });

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sekolah extends Model
 {
@@ -24,5 +26,17 @@ class Sekolah extends Model
             'latitude' => 'float',
             'longitude' => 'float',
         ];
+    }
+
+    // Satu sekolah memiliki satu profil
+    public function profil(): HasOne
+    {
+        return $this->hasOne(ProfilSekolah::class);
+    }
+
+    // Satu sekolah dapat memiliki banyak pengguna
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 }

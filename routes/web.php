@@ -10,13 +10,19 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfilSekolahController;
 use Illuminate\Support\Facades\Route;
 
-// Halaman peta publik
-Route::get('/', [PetaController::class, 'index'])
-    ->name('peta.index');
+// Halaman peta publik dan data GeoJSON
+Route::controller(PetaController::class)->group(function () {
+    Route::get('/', 'index')->name('peta.index');
+    Route::get('/data/sekolah', 'geojson')->name('peta.data');
+    Route::get('/pencarian', 'cari')->name('peta.cari');
+    Route::get('/klaster', 'klaster')->name('peta.klaster');
+    Route::get('/peta-panas', 'panas')->name('peta.panas');
+    Route::get('/wilayah', 'wilayah')->name('peta.wilayah');
+    Route::get('/data/wilayah', 'geojsonWilayah')->name('peta.data.wilayah');
+    Route::get('/rute', 'rute')->name('peta.rute');
+    Route::get('/cek-alamat', 'alamat')->name('peta.alamat');
 
-// Data GeoJSON sekolah
-Route::get('/data/sekolah', [PetaController::class, 'geojson'])
-    ->name('peta.data');
+});
 
 // Profil publik sekolah
 Route::get('/profil-sekolah/{sekolah}', [ProfilSekolahController::class, 'publicShow'])
@@ -83,5 +89,5 @@ Route::middleware(['auth', 'role:admin'])
     ->name('admin.')
     ->group(function () {
         Route::resource('users', UserController::class)
-            ->except('show');
+            ->except(['show']);
     });

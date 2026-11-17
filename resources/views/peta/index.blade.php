@@ -1,4 +1,3 @@
-
 @extends('layouts.public')
 
 @section('title', 'Peta Persebaran Sekolah')
@@ -204,7 +203,6 @@
 </style>
 @endpush
 
-
 @section('content')
 
 <div class="dashboard-peta">
@@ -229,7 +227,6 @@
 
     </section>
 
-
     {{-- FILTER DAN PENCARIAN --}}
     <section class="filter-panel">
 
@@ -239,6 +236,7 @@
 
         <div class="controls">
 
+            {{-- Filter jenjang --}}
             <select id="filterJenjang">
                 <option value="">Semua Jenjang</option>
                 <option value="SD">SD</option>
@@ -247,12 +245,14 @@
                 <option value="SMK">SMK</option>
             </select>
 
+            {{-- Filter status --}}
             <select id="filterStatus">
                 <option value="">Semua Status</option>
                 <option value="Negeri">Negeri</option>
                 <option value="Swasta">Swasta</option>
             </select>
 
+            {{-- Pencarian --}}
             <input
                 type="text"
                 id="cariSekolah"
@@ -266,7 +266,6 @@
         </div>
 
     </section>
-
 
     {{-- PETA --}}
     <section class="map-card">
@@ -283,7 +282,6 @@
 </div>
 
 @endsection
-
 
 @push('scripts')
 
@@ -314,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     ).addTo(map);
 
-
     // 3. MARKER CLUSTER
     const markerCluster = L.markerClusterGroup({
         showCoverageOnHover: false,
@@ -328,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let semuaSekolah = [];
     let daftarMarker = [];
 
-
     // 4. WARNA MARKER JENJANG
     function warnaJenjang(jenjang) {
 
@@ -341,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return warna[jenjang] || '#64748b';
     }
-
 
     // 5. MENGAMANKAN TEKS POPUP
     function escapeHTML(teks) {
@@ -358,7 +353,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         });
     }
-
 
     // 6. MEMBUAT MARKER
     function buatMarker(feature) {
@@ -385,14 +379,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         });
 
-
         const marker = L.marker(
             [latitude, longitude],
             {
                 icon: ikonSekolah
             }
         );
-
 
         // POPUP INFORMASI SEKOLAH
         const popup = `
@@ -451,37 +443,41 @@ document.addEventListener('DOMContentLoaded', function () {
         return marker;
     }
 
-
     // 7. MENAMPILKAN DATA SEKOLAH
     function tampilkanSekolah() {
 
         const jenjang = document.getElementById('filterJenjang').value;
+
         const status = document.getElementById('filterStatus').value;
 
         const kataKunci = document.getElementById('cariSekolah')
             .value.trim().toLowerCase();
 
-
+        // Melakukan filter data sekolah
         const hasil = semuaSekolah.filter(function(feature) {
 
             const p = feature.properties;
 
-            const cocokJenjang = !jenjang || p.jenjang === jenjang;
+            const cocokJenjang =
+                !jenjang || p.jenjang === jenjang;
 
-            const cocokStatus = !status || p.status === status;
+            const cocokStatus =
+                !status || p.status === status;
 
-            const cocokNama = !kataKunci ||
+            const cocokNama =
+                !kataKunci ||
                 String(p.nama ?? '').toLowerCase().includes(kataKunci);
 
             return cocokJenjang && cocokStatus && cocokNama;
 
         });
 
-
+        // Menghapus marker sebelumnya
         markerCluster.clearLayers();
+
         daftarMarker = [];
 
-
+        // Menampilkan marker hasil filter
         hasil.forEach(function(feature) {
 
             const marker = buatMarker(feature);
@@ -495,18 +491,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         });
 
-
-        // MEMPERBARUI JUMLAH SEKOLAH
+        // Memperbarui jumlah sekolah
         document.getElementById('jumlah').textContent =
             hasil.length + ' Sekolah';
 
-
+        // Menyesuaikan tampilan peta
         if (hasil.length > 0) {
 
             const bounds = L.latLngBounds(
                 hasil.map(function(feature) {
+
                     const c = feature.geometry.coordinates;
+
                     return [c[1], c[0]];
+
                 })
             );
 
@@ -515,7 +513,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
-
 
     // 8. MENGAMBIL DATA GEOJSON
     async function muatDataSekolah() {
@@ -549,7 +546,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
 
-
     // 9. PENCARIAN SEKOLAH
     document.getElementById('tombolCari')
         .addEventListener('click', tampilkanSekolah);
@@ -563,16 +559,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         });
 
-
     // 10. FILTER JENJANG
     document.getElementById('filterJenjang')
         .addEventListener('change', tampilkanSekolah);
 
-
     // 11. FILTER STATUS
     document.getElementById('filterStatus')
         .addEventListener('change', tampilkanSekolah);
-
 
     // 12. LEGENDA
     const legenda = L.control({
@@ -604,7 +597,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     legenda.addTo(map);
-
 
     // 13. MEMUAT DATA AWAL
     muatDataSekolah();

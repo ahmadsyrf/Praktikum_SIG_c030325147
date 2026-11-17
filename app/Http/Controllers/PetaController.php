@@ -37,40 +37,93 @@ class PetaController extends Controller
     {
         return view('peta.wilayah');
     }
-    // Praktikum 25: Halaman Rute
+
+    // Praktikum 25: Halaman rute
     public function rute()
     {
         return view('peta.rute');
     }
-    // Praktikum 26: Menu Cek Lokasi
+
+    // Praktikum 26: Menu cek lokasi
     public function alamat()
     {
         return view('peta.alamat');
     }
 
     // Mengambil data sekolah dalam format GeoJSON
+    // Mendukung filter Bounding Box
     public function geojson(Request $request)
     {
+        $parameterBbox = ['west', 'south', 'east', 'north'];
+
+        $adaParameterBbox = collect($parameterBbox)
+            ->contains(fn ($key) => $request->has($key));
+
+        $bboxLengkap = collect($parameterBbox)
+            ->every(fn ($key) => $request->filled($key));
+
+        // Pastikan semua parameter Bounding Box dikirim
+        if ($adaParameterBbox && !$bboxLengkap) {
+            return response()->json([
+                'message' => 'Parameter Bounding Box tidak lengkap.',
+            ], 422);
+        }
+
+        // Validasi nilai koordinat
+        if ($bboxLengkap) {
+            $request->validate([
+                'west' => 'required|numeric|between:-180,180',
+                'east' => 'required|numeric|between:-180,180',
+                'south' => 'required|numeric|between:-90,90',
+                'north' => 'required|numeric|between:-90,90',
+            ]);
+        }
+
         $features = Sekolah::with('profil')
 
-            // Filter berdasarkan jenjang sekolah
+            // Filter berdasarkan jenjang
             ->when($request->jenjang, function ($query, $jenjang) {
                 $query->where('jenjang', $jenjang);
             })
 
-            // Filter berdasarkan status sekolah
+            // Filter berdasarkan status
             ->when($request->status, function ($query, $status) {
                 $query->where('status', $status);
             })
 
-            // Hanya mengambil sekolah yang memiliki koordinat
+            // Hanya sekolah yang memiliki koordinat
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
+
+            // Filter berdasarkan area peta yang sedang terlihat
+            ->when($bboxLengkap, function ($query) use ($request) {
+
+                $west = (float) $request->west;
+                $east = (float) $request->east;
+                $south = (float) $request->south;
+                $north = (float) $request->north;
+
+                // Batas latitude
+                $query->whereBetween('latitude', [$south, $north]);
+
+                // Batas longitude
+                // Mendukung peta yang melewati garis tanggal internasional
+                if ($west <= $east) {
+                    $query->whereBetween('longitude', [$west, $east]);
+                } else {
+                    $query->where(function ($subQuery) use ($west, $east) {
+                        $subQuery
+                            ->where('longitude', '>=', $west)
+                            ->orWhere('longitude', '<=', $east);
+                    });
+                }
+            })
 
             ->get()
 
             // Mengubah data sekolah menjadi GeoJSON
             ->map(function ($sekolah) {
+
                 return [
                     'type' => 'Feature',
 

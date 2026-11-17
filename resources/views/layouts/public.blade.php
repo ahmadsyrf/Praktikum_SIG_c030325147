@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -11,25 +12,38 @@
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         html, body {
-            height: 100%;
+            width: 100%;
+            min-height: 100%;
             margin: 0;
+            padding: 0;
             font-family: system-ui, sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         body {
             display: flex;
             flex-direction: column;
+            min-height: 100vh;
         }
 
+        /* NAVBAR */
         .bar {
             flex: 0 0 56px;
+            height: 56px;
+            width: 100%;
             display: flex;
             align-items: center;
             gap: 16px;
             padding: 0 16px;
             background: #1e3a8a;
             color: #fff;
+            z-index: 2000;
         }
 
         .brand {
@@ -68,14 +82,23 @@
             font-size: 14px;
         }
 
+        /* KONTEN UTAMA */
         main {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
+            flex: 1 0 auto;
+            width: 100%;
+            min-height: calc(100vh - 56px);
             position: relative;
+            display: block;
+            overflow: visible;
+            padding: 0;
+            margin: 0;
         }
 
+        main > * {
+            max-width: none;
+        }
+
+        /* TOOLBAR */
         .toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -103,11 +126,13 @@
             cursor: pointer;
         }
 
+        /* PETA */
         .peta {
-            flex: 1;
+            width: 100%;
             min-height: 300px;
         }
 
+        /* PANEL */
         .panel {
             position: absolute;
             z-index: 1000;
@@ -117,6 +142,27 @@
             font-size: 14px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
         }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .bar {
+                gap: 8px;
+                padding: 0 8px;
+            }
+
+            .brand {
+                font-size: 13px;
+            }
+
+            .menu a {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .masuk {
+                font-size: 12px;
+            }
+        }
     </style>
 
     @stack('styles')
@@ -124,6 +170,7 @@
 
 <body>
 
+    <!-- NAVBAR -->
     <header class="bar">
 
         <strong class="brand">Peta Sekolah</strong>
@@ -163,17 +210,19 @@
 
     </header>
 
+    <!-- KONTEN HALAMAN -->
     <main>
         @yield('content')
     </main>
 
+    <!-- LEAFLET -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         window.PETA_URL = {
-        data: "{{ route('peta.data') }}",
-        wilayah: "{{ route('peta.data.wilayah') }}",
-    };
+            data: "{{ route('peta.data') }}",
+            wilayah: "{{ route('peta.data.wilayah') }}",
+        };
     </script>
 
     <script src="{{ asset('js/peta.js') }}"></script>

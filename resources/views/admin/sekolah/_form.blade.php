@@ -45,7 +45,11 @@
                     {{ ucfirst($name) }}
                 </label>
 
-                <select id="{{ $name }}" name="{{ $name }}" class="{{ $cls }}">
+                <select
+                    id="{{ $name }}"
+                    name="{{ $name }}"
+                    class="{{ $cls }}"
+                >
                     <option value="">-- Pilih --</option>
 
                     @foreach ($opsi as $o)
@@ -65,7 +69,9 @@
         @endforeach
 
         <div>
-            <label for="alamat" class="block font-medium">Alamat</label>
+            <label for="alamat" class="block font-medium">
+                Alamat
+            </label>
 
             <textarea
                 id="alamat"
@@ -77,6 +83,20 @@
             @error('alamat')
                 <p class="text-red-600 text-sm">{{ $message }}</p>
             @enderror
+
+            <button
+                type="button"
+                id="isiAlamatDariPeta"
+                style="background-color: #4f46e5; color: white;"
+                class="mt-3 px-4 py-2 rounded-lg font-semibold shadow-md hover:opacity-90 transition"
+            >
+                Isi Alamat dari Peta
+            </button>
+
+            <p
+                id="statusAlamat"
+                class="text-sm text-gray-600 mt-2"
+            ></p>
         </div>
 
     </div>
@@ -132,22 +152,26 @@
         </div>
 
         <div class="space-y-2">
+
             <button
                 type="button"
                 id="gunakanLokasi"
-                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                style="background-color: #16a34a; color: white;"
+                class="px-4 py-2 rounded-lg font-semibold shadow-md hover:opacity-90 transition"
             >
                 Gunakan Lokasi Saya
             </button>
 
             <p id="statusLokasi" class="text-sm text-gray-600"></p>
+
         </div>
 
         <div class="flex gap-3 pt-2">
 
             <button
                 type="submit"
-                class="px-5 py-2 bg-blue-700 text-white rounded"
+                style="background-color: #1d4ed8; color: white;"
+                class="px-5 py-2 rounded-lg font-semibold"
             >
                 Simpan
             </button>
@@ -156,7 +180,7 @@
                 href="{{ auth()->user()->isDinas()
                     ? route('dinas.sekolah.index')
                     : route('dashboard') }}"
-                class="px-5 py-2 bg-gray-300 rounded"
+                class="px-5 py-2 bg-gray-300 rounded-lg font-semibold"
             >
                 Batal
             </a>
@@ -174,6 +198,10 @@
 
     const tombolLokasi = document.getElementById('gunakanLokasi');
     const statusLokasi = document.getElementById('statusLokasi');
+
+    const alamatInput = document.getElementById('alamat');
+    const tombolAlamat = document.getElementById('isiAlamatDariPeta');
+    const statusAlamat = document.getElementById('statusAlamat');
 
     const sudahAda =
         latInput.value !== '' && lngInput.value !== '';
@@ -230,6 +258,7 @@
         });
     });
 
+    // Mengambil lokasi perangkat
     tombolLokasi.addEventListener('click', function () {
 
         if (!navigator.geolocation) {
@@ -279,6 +308,64 @@
                 maximumAge: 0
             }
         );
+    });
+
+    // Reverse Geocoding: koordinat menjadi alamat
+    tombolAlamat.addEventListener('click', async function () {
+
+        const lat = parseFloat(latInput.value);
+        const lng = parseFloat(lngInput.value);
+
+        if (
+            latInput.value === '' ||
+            lngInput.value === '' ||
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lng) ||
+            lat < -90 || lat > 90 ||
+            lng < -180 || lng > 180
+        ) {
+            statusAlamat.textContent =
+                'Tentukan lokasi sekolah pada peta terlebih dahulu.';
+            return;
+        }
+
+        tombolAlamat.disabled = true;
+        statusAlamat.textContent =
+            'Sedang mencari alamat...';
+
+        try {
+            const parameter = new URLSearchParams({
+                format: 'jsonv2',
+                lat: lat,
+                lon: lng,
+                'accept-language': 'id'
+            });
+
+            const response = await fetch(
+                'https://nominatim.openstreetmap.org/reverse?' + parameter
+            );
+
+            if (!response.ok) {
+                throw new Error('Gagal menghubungi layanan pencarian alamat.');
+            }
+
+            const data = await response.json();
+
+            if (!data.display_name) {
+                throw new Error('Alamat tidak ditemukan.');
+            }
+
+            alamatInput.value = data.display_name;
+
+            statusAlamat.textContent =
+                'Alamat berhasil diisi dari lokasi peta.';
+
+        } catch (error) {
+            statusAlamat.textContent =
+                error.message || 'Terjadi kesalahan saat mencari alamat.';
+        } finally {
+            tombolAlamat.disabled = false;
+        }
     });
 </script>
 @endpush

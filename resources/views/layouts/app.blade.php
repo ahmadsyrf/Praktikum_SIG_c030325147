@@ -19,12 +19,12 @@
     <style>
         body {
             font-family: 'Inter', 'Segoe UI', sans-serif;
-            background: #f1f5f9;
+            background: #f8fafc;
         }
 
         /* Warna utama navbar */
         .navbar-gradient {
-            background: #0B6687;
+            background: #0f172a;
         }
 
         /* Menu navigasi */
@@ -33,7 +33,7 @@
             border-radius: 10px;
             font-size: 14px;
             font-weight: 500;
-            color: #E0F2FE;
+            color: #cbd5e1;
             transition: all .2s ease;
         }
 
@@ -43,7 +43,7 @@
         }
 
         .nav-link.active {
-            background: rgba(255, 255, 255, .20);
+            background: #2563eb;
             color: white;
             font-weight: 700;
         }
@@ -85,6 +85,7 @@
 <body class="min-h-screen flex flex-col text-slate-800">
 
     <!-- NAVBAR -->
+    @if (! (request()->routeIs('dashboard') && auth()->user()->isAdmin()))
     <nav class="navbar-gradient text-white shadow-lg relative z-50">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
@@ -128,7 +129,7 @@
 
                         </div>
 
-                        <div class="w-10 h-10 rounded-full bg-white text-[#0B6687] flex items-center justify-center font-bold text-lg shadow">
+                        <div class="w-10 h-10 rounded-full bg-white text-[#2563EB] flex items-center justify-center font-bold text-lg shadow">
 
                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
 
@@ -139,7 +140,7 @@
                 @else
 
                     <a href="{{ route('login') }}"
-                       class="bg-white text-[#0B6687] hover:bg-blue-50 px-5 py-2.5 rounded-xl font-semibold text-sm shadow transition">
+                       class="bg-white text-[#2563EB] hover:bg-blue-50 px-5 py-2.5 rounded-xl font-semibold text-sm shadow transition">
 
                         Login
 
@@ -238,10 +239,11 @@
         </div>
 
     </nav>
+    @endif
 
 
     <!-- KONTEN UTAMA -->
-    <main class="main-container flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-7">
+    <main class="main-container flex-1 w-full {{ request()->routeIs('dashboard') && auth()->user()->isAdmin() ? 'max-w-none mx-0 px-0 py-0' : 'max-w-7xl mx-auto px-4 sm:px-6 py-7' }}">
 
         <!-- NOTIFIKASI BERHASIL -->
         @if (session('success'))
@@ -330,7 +332,8 @@
 
 
     <!-- FOOTER -->
-    <footer class="bg-[#075B7D] text-white mt-10">
+    @if (! (request()->routeIs('dashboard') && auth()->user()->isAdmin()))
+    <footer class="bg-[#0F172A] text-white mt-10">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
@@ -357,6 +360,7 @@
         </div>
 
     </footer>
+    @endif
 
 
     <!-- LEAFLET JAVASCRIPT -->

@@ -62,17 +62,51 @@ class RbacTest extends TestCase
         $this->assertAuthenticatedAs($u);
     }
 
+    public function test_login_dapat_mengingat_pengguna(): void
+    {
+        $user = $this->user('dinas');
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            'remember' => '1',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertNotNull($user->fresh()->getRememberToken());
+    }
+
     public function test_admin_hanya_mengelola_pengguna(): void
     {
         $admin = $this->user('admin');
+        $sekolah = $this->sekolah('11111111');
 
         $this->actingAs($admin)
             ->get('/admin/users')
             ->assertOk();
 
         $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee($sekolah->nama);
+
+        $this->actingAs($admin)
             ->get('/dinas/sekolah')
             ->assertForbidden();
+    }
+
+    public function test_dashboard_render_untuk_dinas_dan_operator(): void
+    {
+        $sekolah = $this->sekolah('22222222');
+
+        $this->actingAs($this->user('dinas'))
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Dinas Pendidikan');
+
+        $this->actingAs($this->user('sekolah', $sekolah))
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee($sekolah->nama);
     }
 
     public function test_admin_menambah_pengguna_sekolah(): void

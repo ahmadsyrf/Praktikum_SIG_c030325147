@@ -5,10 +5,15 @@ const Peta = {
 
     // Membuat peta Leaflet
     buat(idElemen, zoom = 12) {
-        const map = L.map(idElemen).setView(Peta.pusat, zoom);
+        const map = L.map(idElemen, {
+            preferCanvas: true
+        }).setView(Peta.pusat, zoom);
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+            keepBuffer: 1,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
 

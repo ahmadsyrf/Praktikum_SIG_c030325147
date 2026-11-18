@@ -4,6 +4,11 @@
 @section('title', 'Pencarian')
 
 @push('styles')
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
 <style>
     #hasil {
         list-style: none;
@@ -19,6 +24,20 @@
 
     #hasil li:hover {
         background: #eff6ff;
+    }
+
+    .marker-cluster-small,
+    .marker-cluster-medium,
+    .marker-cluster-large {
+        background-color: rgba(37, 99, 235, .18);
+    }
+
+    .marker-cluster-small div,
+    .marker-cluster-medium div,
+    .marker-cluster-large div {
+        background-color: #2563eb;
+        color: #fff;
+        font-weight: 700;
     }
 </style>
 @endpush
@@ -50,41 +69,43 @@
 @endsection
 
 @push('scripts')
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
 <script>
     const map = Peta.buat('peta');
-    const lapisan = L.layerGroup().addTo(map);
+    const lapisan = L.markerClusterGroup({
+        chunkedLoading: true,
+        chunkInterval: 50,
+        chunkDelay: 20,
+        showCoverageOnHover: false,
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true
+    }).addTo(map);
     let semua = [];
+    const markerSekolah = new Map();
+    const hasilElement = document.getElementById('hasil');
 
     function tampil(daftar) {
         lapisan.clearLayers();
 
-        const ul = document.getElementById('hasil');
-        ul.innerHTML = '';
+        const fragmen = document.createDocumentFragment();
+        const markerTerlihat = [];
 
         daftar.forEach((f) => {
-            const marker = L.marker(Peta.latlng(f))
-                .bindPopup(Peta.popup(f))
-                .addTo(lapisan);
+            const marker = markerSekolah.get(String(f.properties.id));
 
             const li = document.createElement('li');
+            li.dataset.sekolahId = f.properties.id;
             li.textContent = `${f.properties.nama} (${f.properties.kecamatan})`;
-
-            li.addEventListener('click', () => {
-                map.flyTo(Peta.latlng(f), 17);
-                marker.openPopup();
-            });
-
-            ul.appendChild(li);
+            fragmen.appendChild(li);
+            if (marker) markerTerlihat.push(marker);
         });
+
+        hasilElement.replaceChildren(fragmen);
+        lapisan.addLayers(markerTerlihat);
 
         document.getElementById('jumlah').textContent =
             `${daftar.length} dari ${semua.length} sekolah`;
-
-        if (daftar.length > 0) {
-            map.fitBounds(
-                L.latLngBounds(daftar.map(Peta.latlng)).pad(0.1)
-            );
-        }
     }
 
     function cari() {
@@ -96,7 +117,7 @@
         tampil(semua.filter(({ properties: p }) =>
             (!jenjang || p.jenjang === jenjang) &&
             (!kata || [p.nama, p.npsn, p.kecamatan]
-                .some((t) => (t ?? '').toLowerCase().includes(kata)))
+                .some((t) => String(t ?? '').toLowerCase().includes(kata)))
         ));
     }
 
@@ -115,9 +136,31 @@
         cari();
     });
 
+    hasilElement.addEventListener('click', (event) => {
+        const item = event.target.closest('li[data-sekolah-id]');
+        if (!item) return;
+
+        const marker = markerSekolah.get(item.dataset.sekolahId);
+        if (marker) {
+            lapisan.zoomToShowLayer(marker, () => marker.openPopup());
+        }
+    });
+
     Peta.ambilSekolah().then((fitur) => {
         semua = fitur;
+
+        semua.forEach((f) => {
+            markerSekolah.set(
+                String(f.properties.id),
+                L.marker(Peta.latlng(f)).bindPopup(Peta.popup(f))
+            );
+        });
+
         tampil(semua);
+    }).catch((error) => {
+        console.error('Gagal memuat data pencarian sekolah:', error);
+        document.getElementById('jumlah').textContent =
+            'Gagal memuat data sekolah';
     });
 </script>
 @endpush

@@ -38,7 +38,7 @@ class AuthController extends Controller
         }
 
         // Memeriksa email dan password
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
 
             // Memeriksa status aktif pengguna
             if (!Auth::user()->isActive()) {

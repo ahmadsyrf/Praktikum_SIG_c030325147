@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Peta Persebaran Sekolah')
+@section('title', 'Peta Sekolah Banjarmasin')
 
 @push('styles')
 <link rel="stylesheet"
@@ -10,132 +10,73 @@
       href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 
 <style>
-    .dashboard-peta {
-        max-width: 1400px;
-        margin: 25px auto;
-        padding: 0 20px;
+    html, body { height: 100%; overflow: hidden; }
+    body { min-height: 100%; }
+    body > main { width: 100%; height: 100vh; min-height: 100vh; overflow: hidden; }
+    .dashboard-peta { position: fixed; inset: 0; z-index: 1; }
+    .map-card, #map { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #map { z-index: 1; background: #dbeafe; }
+    .leaflet-control-attribution { font-size: 10px !important; }
+
+    .floating-panel {
+        position: absolute;
+        z-index: 600;
+        top: 105px;
+        left: max(24px, calc((100vw - 1440px) / 2));
+        width: 356px;
+        max-height: calc(100vh - 130px);
+        overflow: auto;
+        padding: 18px;
+        border: 1px solid rgba(226, 232, 240, .9);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, .94);
+        box-shadow: 0 20px 55px rgba(15, 23, 42, .16);
+        backdrop-filter: blur(18px);
+        transition: width .25s ease, transform .25s ease;
     }
 
-    .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
-    }
+    .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .eyebrow { margin: 0 0 6px; color: #2563eb; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .panel-heading h1 { margin: 0; color: #0f172a; font-size: 19px; line-height: 1.25; letter-spacing: -.04em; }
+    .panel-subtitle { margin: 7px 0 0; color: #64748b; font-size: 12px; line-height: 1.5; }
+    .collapse-button { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #475569; cursor: pointer; transition: .2s ease; }
+    .collapse-button:hover { border-color: #bfdbfe; background: #eff6ff; color: #2563eb; }
+    .panel-body { overflow: hidden; opacity: 1; transition: opacity .2s ease; }
+    .floating-panel.is-collapsed { width: 280px; }
+    .floating-panel.is-collapsed .panel-body { display: none; }
+    .floating-panel.is-collapsed .collapse-button svg { transform: rotate(180deg); }
 
-    .stat-card {
-        background: white;
-        padding: 20px;
-        border-radius: 13px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
-    }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0 16px; }
+    .stat-card { min-width: 0; padding: 11px 10px; border: 1px solid #e8edf5; border-radius: 12px; background: #fff; }
+    .stat-label { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; color: #64748b; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .stat-value { overflow: hidden; color: #0f172a; font-size: 13px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-value.total { color: #2563eb; font-size: 12px; }
+    .status-dot { display: inline-block; flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px #dcfce7; }
+    .panel-section-label { margin: 0 0 9px; color: #334155; font-size: 11px; font-weight: 750; }
+    .search-wrap { position: relative; margin-bottom: 9px; }
+    .search-wrap svg { position: absolute; top: 12px; left: 12px; color: #94a3b8; pointer-events: none; }
+    .map-search, .map-select { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: #fff; color: #0f172a; font: inherit; font-size: 12px; transition: border-color .2s ease, box-shadow .2s ease; }
+    .map-search { padding-left: 37px; }
+    .map-search:focus, .map-select:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(37, 99, 235, .11); }
+    .filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .map-select { height: 38px; padding: 0 9px; color: #475569; }
+    .panel-divider { height: 1px; margin: 16px 0; background: #e8edf5; }
+    .quick-actions { display: grid; gap: 8px; }
+    .quick-action { display: flex; align-items: center; gap: 10px; min-height: 41px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; color: #334155; cursor: pointer; text-align: left; font: inherit; font-size: 11px; font-weight: 700; transition: .2s ease; }
+    .quick-action:hover { transform: translateY(-1px); border-color: #bfdbfe; background: #f8fbff; color: #1d4ed8; }
+    .quick-action svg { flex: 0 0 17px; color: #2563eb; }
+    .quick-action.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+    .quick-action.primary svg { color: #fff; }
+    .quick-action.primary:hover { background: #1d4ed8; color: #fff; }
+    .map-source { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; color: #94a3b8; font-size: 10px; }
 
-    .stat-label {
-        color: #64748b;
-        font-size: 13px;
-        margin-bottom: 8px;
-    }
-
-    .stat-value {
-        font-size: 25px;
-        font-weight: 700;
-        color: #075985;
-    }
-
-    .filter-panel {
-        background: white;
-        padding: 20px;
-        border-radius: 13px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 20px;
-    }
-
-    .filter-title {
-        font-size: 17px;
-        font-weight: 700;
-        margin-bottom: 15px;
-    }
-
-    .controls {
-        display: grid;
-        grid-template-columns: 1fr 1fr 2fr auto;
-        gap: 12px;
-    }
-
-    .controls select,
-    .controls input {
-        width: 100%;
-        padding: 12px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        background: white;
-    }
-
-    .controls button {
-        padding: 12px 20px;
-        border: none;
-        border-radius: 8px;
-        background: #075985;
-        color: white;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .controls button:hover {
-        background: #0c4a6e;
-    }
-
-    .map-card {
-        background: white;
-        padding: 12px;
-        border-radius: 14px;
-        box-shadow: 0 3px 15px rgba(15, 23, 42, 0.08);
-        border: 1px solid #e2e8f0;
-    }
-
-    .map-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 8px 15px;
-        flex-wrap: wrap;
-    }
-
-    .map-heading h2 {
-        margin: 0 0 5px;
-        font-size: 18px;
-    }
-
-    .btn-download {
-        display: inline-block;
-        padding: 10px 16px;
-        background: #15803d;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s ease;
-    }
-
-    .btn-download:hover {
-        background: #166534;
-    }
-
-    .btn-download:disabled {
-        background: #94a3b8;
-        cursor: not-allowed;
-    }
-
-    #map {
-        width: 100%;
-        height: 72vh;
-        min-height: 450px;
-        border-radius: 10px;
-        z-index: 1;
-    }
+    .layer-switcher { display: grid; gap: 6px; min-width: 132px; margin-top: 82px !important; padding: 10px; border: 1px solid rgba(226, 232, 240, .95); border-radius: 14px; background: rgba(255, 255, 255, .94); box-shadow: 0 12px 30px rgba(15, 23, 42, .13); backdrop-filter: blur(14px); }
+    .layer-switcher-title { padding: 1px 5px 5px; color: #64748b; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .layer-switcher button { display: flex; align-items: center; gap: 8px; min-height: 31px; padding: 5px 7px; border: 0; border-radius: 8px; background: transparent; color: #475569; cursor: pointer; text-align: left; font: inherit; font-size: 10px; font-weight: 650; transition: .18s ease; }
+    .layer-switcher button:hover { background: #f1f5f9; color: #0f172a; }
+    .layer-switcher button.active { background: #eff6ff; color: #2563eb; }
+    .layer-icon { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 5px; background: #f1f5f9; font-size: 11px; }
+    .layer-switcher button.active .layer-icon { background: #dbeafe; }
 
     .marker-sekolah {
         width: 22px;
@@ -217,108 +158,123 @@
     }
 
     @media (max-width: 768px) {
-        .dashboard-peta {
-            padding: 0 12px;
-        }
+        .floating-panel { top: 83px; left: 12px; width: min(356px, calc(100vw - 24px)); max-height: min(55vh, 500px); padding: 14px; border-radius: 16px; }
+        .floating-panel.is-collapsed { width: min(280px, calc(100vw - 24px)); }
+        .stats { margin: 14px 0; }
+        .stat-card { padding: 9px 7px; }
+        .stat-label { font-size: 8px; }
+        .stat-value { font-size: 11px; }
+        .stat-value.total { font-size: 14px; }
+        .layer-switcher { margin-top: 67px !important; min-width: 116px; padding: 7px; }
+        .layer-switcher button { min-height: 28px; }
+    }
 
-        .controls {
-            grid-template-columns: 1fr;
-        }
-
-        #map {
-            height: 65vh;
-            min-height: 400px;
-        }
-
-        .map-heading {
-            align-items: flex-start;
-        }
+    @media (max-width: 420px) {
+        .floating-panel { top: 78px; }
+        .layer-switcher { margin-top: 59px !important; }
+        .map-source { font-size: 9px; }
     }
 </style>
 @endpush
 
 @section('content')
-
 <div class="dashboard-peta">
+    <div class="map-card">
+        <div id="map" aria-label="Peta interaktif persebaran sekolah Banjarmasin"></div>
+    </div>
 
-    <section class="stats">
-
-        <div class="stat-card">
-            <div class="stat-label">Total Sekolah Ditampilkan</div>
-            <div class="stat-value" id="jumlah">Memuat...</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-label">Wilayah Pemetaan</div>
-            <div class="stat-value">Banjarmasin</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-label">Sumber Peta</div>
-            <div class="stat-value">OpenStreetMap</div>
-        </div>
-
-    </section>
-
-    <section class="filter-panel">
-
-        <div class="filter-title">
-            Pencarian dan Filter Sekolah
-        </div>
-
-        <div class="controls">
-
-            <select id="filterJenjang">
-                <option value="">Semua Jenjang</option>
-                <option value="SD">SD</option>
-                <option value="SMP">SMP</option>
-                <option value="SMA">SMA</option>
-                <option value="SMK">SMK</option>
-            </select>
-
-            <select id="filterStatus">
-                <option value="">Semua Status</option>
-                <option value="Negeri">Negeri</option>
-                <option value="Swasta">Swasta</option>
-            </select>
-
-            <input
-                type="text"
-                id="cariSekolah"
-                placeholder="Masukkan nama sekolah..."
-            >
-
-            <button type="button" id="tombolCari">
-                Cari Sekolah
-            </button>
-
-        </div>
-
-    </section>
-
-    <section class="map-card">
-
-        <div class="map-heading">
-
+    <aside class="floating-panel" id="filterPanel" aria-label="Filter dan statistik sekolah">
+        <div class="panel-heading">
             <div>
-                <h2>Peta Persebaran Sekolah</h2>
-                <span>Klik marker atau wilayah kecamatan untuk melihat informasi</span>
+                <p class="eyebrow">Peta publik · Banjarmasin</p>
+                <h1>Jelajahi sekolah</h1>
+                <p class="panel-subtitle">Temukan sebaran sekolah dan informasi wilayah secara langsung.</p>
             </div>
-
-            <button type="button"
-                    id="downloadGeoJSON"
-                    class="btn-download">
-                Download GeoJSON
+            <button type="button" class="collapse-button" id="toggleFilterPanel" aria-label="Ciutkan panel" aria-expanded="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </button>
-
         </div>
 
-        <div id="map"></div>
+        <div class="panel-body" id="filterPanelBody">
+            <section class="stats" aria-label="Ringkasan data peta">
+        <div class="stat-card">
+                    <div class="stat-label"><span class="status-dot"></span> Total sekolah</div>
+                    <div class="stat-value total" id="jumlah" aria-live="polite">Memuat...</div>
+        </div>
+        <div class="stat-card">
+                    <div class="stat-label">Wilayah</div>
+                    <div class="stat-value">Banjarmasin</div>
+        </div>
+        <div class="stat-card">
+                    <div class="stat-label">Sumber</div>
+                    <div class="stat-value">OpenStreetMap</div>
+        </div>
+            </section>
 
-    </section>
+            <section aria-label="Pencarian dan filter">
+                <p class="panel-section-label">Cari dan filter sekolah</p>
+                <div class="search-wrap">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    <input type="search" id="cariSekolah" class="map-search" placeholder="Cari nama sekolah..." autocomplete="off" aria-label="Cari nama sekolah">
+                </div>
+                <div class="filter-row">
+                    <select id="filterJenjang" class="map-select" aria-label="Filter jenjang">
+                        <option value="">Semua Jenjang</option>
+                        <option value="SD">SD</option>
+                        <option value="SMP">SMP</option>
+                        <option value="SMA">SMA</option>
+                        <option value="SMK">SMK</option>
+                    </select>
+                    <select id="filterStatus" class="map-select" aria-label="Filter status">
+                        <option value="">Semua Status</option>
+                        <option value="Negeri">Negeri</option>
+                        <option value="Swasta">Swasta</option>
+                    </select>
+                </div>
+                <button type="button" id="tombolCari" hidden>Cari Sekolah</button>
+            </section>
 
+            <div class="panel-divider"></div>
+
+            <section aria-label="Aksi cepat">
+                <p class="panel-section-label">Aksi cepat</p>
+                <div class="quick-actions">
+                    <button type="button" id="cekLokasiSaya" class="quick-action">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/>
+                            <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/>
+                            <path d="M12 2v3m0 14v3M2 12h3m14 0h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        </svg>
+                        Cek Lokasi Saya
+                    </button>
+                    <button type="button" id="analisisRadius" class="quick-action">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2"/>
+                            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+                        </svg>
+                        Analisis Radius 1 KM
+                    </button>
+                    <button type="button" id="downloadGeoJSON" class="quick-action primary">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Download GeoJSON
+                    </button>
+                </div>
+            </section>
+
+            <div class="map-source">
+                <span id="mapStatus" role="status" aria-live="polite"><span class="status-dot"></span> Data peta aktif</span>
+                <span>Leaflet · OpenStreetMap</span>
+            </div>
+        </div>
+    </aside>
 </div>
-
 @endsection
 
 @push('scripts')
@@ -338,6 +294,9 @@ document.addEventListener('DOMContentLoaded', function () {
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {
             maxZoom: 19,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+            keepBuffer: 1,
             attribution: '&copy; OpenStreetMap contributors'
         }
     );
@@ -346,6 +305,9 @@ document.addEventListener('DOMContentLoaded', function () {
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
             maxZoom: 19,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+            keepBuffer: 1,
             attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics'
         }
     );
@@ -752,10 +714,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const longitude = koordinat[0];
             const latitude = koordinat[1];
 
-            const marker = buatMarker(feature);
+            if (map.hasLayer(markerLayer)) {
+                markerLayer.addLayer(buatMarker(feature));
+            }
 
-            markerLayer.addLayer(marker);
-            markerCluster.addLayer(buatMarker(feature));
+            if (map.hasLayer(markerCluster)) {
+                markerCluster.addLayer(buatMarker(feature));
+            }
 
             dataHeatmap.push([
                 latitude,
@@ -775,20 +740,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 19. STATUS PEMUATAN DATA
-    let sedangMemuat = false;
-    let permintaanTerakhir = 0;
+    let permintaanAktif = null;
     let timerPeta = null;
 
     // 20. MEMUAT DATA SESUAI BOUNDING BOX PETA
     async function muatDataSekolah() {
 
-        if (sedangMemuat) {
-            return;
+        if (permintaanAktif) {
+            permintaanAktif.abort();
         }
 
-        sedangMemuat = true;
-
-        const idPermintaan = ++permintaanTerakhir;
+        const controller = new AbortController();
+        permintaanAktif = controller;
 
         try {
 
@@ -805,7 +768,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const url = @json(route('peta.data')) + '?' + parameter.toString();
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                signal: controller.signal
+            });
 
             if (!response.ok) {
                 throw new Error('Gagal mengambil data sekolah.');
@@ -831,6 +796,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
 
+            if (error.name === 'AbortError') {
+                return;
+            }
+
             console.error('Kesalahan memuat sekolah:', error);
 
             document.getElementById('jumlah').textContent =
@@ -838,7 +807,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } finally {
 
-            sedangMemuat = false;
+            if (permintaanAktif === controller) {
+                permintaanAktif = null;
+            }
 
         }
 
@@ -866,6 +837,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 tampilkanSekolah();
             }
 
+        });
+
+    let timerPencarian = null;
+
+    document.getElementById('cariSekolah')
+        .addEventListener('input', function() {
+            clearTimeout(timerPencarian);
+            timerPencarian = setTimeout(tampilkanSekolah, 250);
         });
 
     // 23. FILTER JENJANG
@@ -974,30 +953,189 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     // 27. KONTROL LAPISAN
-    const baseMaps = {
-        'Peta Standar (OpenStreetMap)': osm,
-        'Peta Satelit (Esri Satellite)': esriSatellite
-    };
-
-    const overlayMaps = {
-        'Marker Sekolah': markerLayer,
-        'Klaster Sekolah': markerCluster,
-        'Peta Panas (Heatmap)': heatLayer,
-        'Batas Kecamatan': kecamatanLayer
-    };
-
     osm.addTo(map);
     markerCluster.addTo(map);
     kecamatanLayer.addTo(map);
 
-    L.control.layers(
-        baseMaps,
-        overlayMaps,
-        {
-            collapsed: false,
-            position: 'topright'
-        }
-    ).addTo(map);
+    let basemapAktif = osm;
+    const tombolLapisan = {};
+
+    function perbaruiStatusLapisan() {
+        Object.keys(tombolLapisan).forEach(function(nama) {
+            const tombol = tombolLapisan[nama];
+            const aktif = nama === 'standar'
+                ? basemapAktif === osm
+                : nama === 'satelit'
+                    ? basemapAktif === esriSatellite
+                    : map.hasLayer({
+                        marker: markerLayer,
+                        klaster: markerCluster,
+                        heatmap: heatLayer,
+                        wilayah: kecamatanLayer
+                    }[nama]);
+
+            tombol.classList.toggle('active', aktif);
+            tombol.setAttribute('aria-pressed', aktif ? 'true' : 'false');
+        });
+    }
+
+    const kontrolLapisan = L.control({ position: 'topright' });
+
+    kontrolLapisan.onAdd = function() {
+        const container = L.DomUtil.create('div', 'layer-switcher');
+        const pilihan = [
+            ['standar', '▧', 'Peta Standar'],
+            ['satelit', '◈', 'Peta Satelit'],
+            ['marker', '●', 'Marker'],
+            ['klaster', '◉', 'Klaster'],
+            ['heatmap', '◌', 'Heatmap'],
+            ['wilayah', '⬡', 'Batas Kecamatan']
+        ];
+
+        container.innerHTML = '<div class="layer-switcher-title">Lapisan Peta</div>';
+
+        pilihan.forEach(function(item) {
+            const nama = item[0];
+            const tombol = L.DomUtil.create('button', '', container);
+            tombol.type = 'button';
+            tombol.innerHTML = '<span class="layer-icon" aria-hidden="true">' +
+                item[1] + '</span><span>' + item[2] + '</span>';
+            tombol.setAttribute('aria-label', item[2]);
+            tombolLapisan[nama] = tombol;
+
+            L.DomEvent.on(tombol, 'click', function(event) {
+                L.DomEvent.stop(event);
+
+                if (nama === 'standar' || nama === 'satelit') {
+                    if (basemapAktif === (nama === 'standar' ? osm : esriSatellite)) return;
+                    map.removeLayer(basemapAktif);
+                    basemapAktif = nama === 'standar' ? osm : esriSatellite;
+                    basemapAktif.addTo(map);
+                    basemapAktif.bringToBack();
+                } else {
+                    const lapisan = {
+                        marker: markerLayer,
+                        klaster: markerCluster,
+                        heatmap: heatLayer,
+                        wilayah: kecamatanLayer
+                    }[nama];
+
+                    if (map.hasLayer(lapisan)) {
+                        map.removeLayer(lapisan);
+                    } else {
+                        if (lapisan === markerLayer || lapisan === markerCluster) {
+                            hasilTerakhir.forEach(function(feature) {
+                                lapisan.addLayer(buatMarker(feature));
+                            });
+                        }
+
+                        lapisan.addTo(map);
+                    }
+                }
+
+                perbaruiStatusLapisan();
+            });
+        });
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+        return container;
+    };
+
+    kontrolLapisan.addTo(map);
+    perbaruiStatusLapisan();
+
+    // Panel peta bisa diciutkan untuk memperluas area eksplorasi.
+    document.getElementById('toggleFilterPanel')
+        .addEventListener('click', function() {
+            const panel = document.getElementById('filterPanel');
+            const isCollapsed = panel.classList.toggle('is-collapsed');
+            this.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+            this.setAttribute('aria-label', isCollapsed ? 'Buka panel' : 'Ciutkan panel');
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 260);
+        });
+
+    // Cari lokasi perangkat dan gambar radius analisis satu kilometer.
+    let penandaLokasi = null;
+    let lingkaranRadius = null;
+
+    document.getElementById('cekLokasiSaya')
+        .addEventListener('click', function() {
+            const status = document.getElementById('mapStatus');
+            status.textContent = 'Meminta akses lokasi...';
+
+            if (!navigator.geolocation) {
+                status.textContent = 'Browser tidak mendukung fitur lokasi.';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(posisi) {
+                const lokasi = [posisi.coords.latitude, posisi.coords.longitude];
+                map.setView(lokasi, 15);
+
+                if (penandaLokasi) map.removeLayer(penandaLokasi);
+                penandaLokasi = L.circleMarker(lokasi, {
+                    radius: 8,
+                    color: '#fff',
+                    weight: 3,
+                    fillColor: '#2563eb',
+                    fillOpacity: 1
+                }).addTo(map).bindTooltip('Lokasi Anda');
+
+                status.textContent = 'Lokasi Anda ditemukan.';
+            }, function(error) {
+                const pesan = error.code === 1
+                    ? 'Izin lokasi ditolak.'
+                    : error.code === 2
+                        ? 'Lokasi tidak tersedia.'
+                        : 'Waktu pencarian lokasi habis.';
+                status.textContent = pesan;
+            }, {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 0
+            });
+        });
+
+    document.getElementById('analisisRadius')
+        .addEventListener('click', function() {
+            const status = document.getElementById('mapStatus');
+
+            if (lingkaranRadius) {
+                map.removeLayer(lingkaranRadius);
+                lingkaranRadius = null;
+                status.innerHTML = '<span class="status-dot"></span> Data peta aktif';
+                return;
+            }
+
+            const pusat = map.getCenter();
+            lingkaranRadius = L.circle(pusat, {
+                radius: 1000,
+                color: '#2563eb',
+                weight: 2,
+                fillColor: '#60a5fa',
+                fillOpacity: .12
+            }).addTo(map);
+
+            function jarakMeter(lat1, lng1, lat2, lng2) {
+                const rad = function(nilai) { return nilai * Math.PI / 180; };
+                const deltaLat = rad(lat2 - lat1);
+                const deltaLng = rad(lng2 - lng1);
+                const a = Math.sin(deltaLat / 2) ** 2 +
+                    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) *
+                    Math.sin(deltaLng / 2) ** 2;
+                return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            }
+
+            const dalamRadius = semuaSekolah.filter(function(feature) {
+                const koordinat = feature.geometry.coordinates;
+                return jarakMeter(pusat.lat, pusat.lng, koordinat[1], koordinat[0]) <= 1000;
+            }).length;
+
+            status.textContent = dalamRadius + ' sekolah dalam radius 1 km dari tengah peta.';
+        });
 
     // 28. MEMULAI PEMUATAN DATA
     muatBatasKecamatan();

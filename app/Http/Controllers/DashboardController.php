@@ -16,6 +16,11 @@ class DashboardController extends Controller
         $jumlahSekolah = 0;
         $sekolah = null;
         $kelengkapan = 0;
+        $sekolahs = null;
+        $totalSekolah = 0;
+        $sekolahNegeri = 0;
+        $sekolahSwasta = 0;
+        $kecamatanTerpadat = null;
 
         // Dashboard Admin
         if ($user->isAdmin()) {
@@ -24,6 +29,33 @@ class DashboardController extends Controller
                 'Dinas Pendidikan' => User::where('role', 'dinas')->count(),
                 'Operator Sekolah' => User::where('role', 'sekolah')->count(),
             ];
+
+            $totalSekolah = Sekolah::count();
+            $sekolahNegeri = Sekolah::where('status', 'Negeri')->count();
+            $sekolahSwasta = Sekolah::where('status', 'Swasta')->count();
+            $kecamatanTerpadat = Sekolah::query()
+                ->select('kecamatan')
+                ->selectRaw('COUNT(*) as total')
+                ->whereNotNull('kecamatan')
+                ->groupBy('kecamatan')
+                ->orderByDesc('total')
+                ->first();
+
+            $sekolahs = Sekolah::query()
+                ->when($request->filled('q'), function ($query) use ($request) {
+                    $kataKunci = $request->input('q');
+                    $query->where(function ($where) use ($kataKunci) {
+                        $where->where('nama', 'like', "%{$kataKunci}%")
+                            ->orWhere('npsn', 'like', "%{$kataKunci}%")
+                            ->orWhere('kecamatan', 'like', "%{$kataKunci}%");
+                    });
+                })
+                ->when(in_array($request->input('status'), ['Negeri', 'Swasta'], true), function ($query) use ($request) {
+                    $query->where('status', $request->input('status'));
+                })
+                ->orderBy('nama')
+                ->paginate(8)
+                ->withQueryString();
         }
 
         // Dashboard Dinas Pendidikan
@@ -70,7 +102,12 @@ class DashboardController extends Controller
             'jumlahPerRole',
             'jumlahSekolah',
             'sekolah',
-            'kelengkapan'
+            'kelengkapan',
+            'sekolahs',
+            'totalSekolah',
+            'sekolahNegeri',
+            'sekolahSwasta',
+            'kecamatanTerpadat'
         ));
     }
 }

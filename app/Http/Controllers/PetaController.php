@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sekolah;
 use App\Support\Geometri;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PetaController extends Controller
 {

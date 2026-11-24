@@ -24,8 +24,11 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
+        // Latihan Mandiri: Menyeragamkan email menjadi huruf kecil saat login
+        $credentials['email'] = strtolower(trim($credentials['email']));
+
         // Membuat identitas pembatas berdasarkan email dan IP
-        $key = Str::lower($request->input('email'))
+        $key = Str::lower($credentials['email'])
             . '|' . $request->ip();
 
         // Memeriksa batas percobaan login

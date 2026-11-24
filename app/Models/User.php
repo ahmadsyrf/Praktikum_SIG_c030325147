@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -27,6 +28,14 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    // Latihan Mandiri: Menyeragamkan email menjadi huruf kecil sebelum disimpan
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : null,
+        );
+    }
 
     protected function casts(): array
     {

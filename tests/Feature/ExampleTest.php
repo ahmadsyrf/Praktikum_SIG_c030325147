@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -32,5 +31,13 @@ class ExampleTest extends TestCase
                 ->assertSee('class="map-tool"', false)
                 ->assertSee('id="peta"', false);
         }
+    }
+
+    public function test_health_check_endpoint(): void
+    {
+        $this->get('/health')
+            ->assertOk()
+            ->assertJsonPath('status', 'healthy')
+            ->assertJsonPath('database.status', 'connected');
     }
 }

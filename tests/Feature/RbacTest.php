@@ -251,4 +251,15 @@ class RbacTest extends TestCase
             'id' => $a->id,
         ]);
     }
+
+    public function test_login_tidak_peka_huruf_besar_kecil(): void
+    {
+        $u = $this->user('dinas');
+        $uppercaseEmail = strtoupper($u->email);
+
+        $this->post('/login', [
+            'email' => $uppercaseEmail,
+            'password' => 'password',
+        ])->assertRedirect('/dashboard');
+    }
 }

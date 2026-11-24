@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\PasswordController;
@@ -9,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfilSekolahController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 // Halaman peta publik dan data GeoJSON
 Route::controller(PetaController::class)->group(function () {
@@ -91,3 +91,33 @@ Route::middleware(['auth', 'role:admin'])
         Route::resource('users', UserController::class)
             ->except(['show']);
     });
+
+// Latihan Mandiri: Endpoint pemantau kesehatan koneksi database (/health)
+Route::get('/health', function () {
+    try {
+        $startTime = microtime(true);
+        DB::connection()->getPdo();
+        $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+        return response()->json([
+            'status' => 'healthy',
+            'timestamp' => now()->toIso8601String(),
+            'environment' => app()->environment(),
+            'database' => [
+                'status' => 'connected',
+                'driver' => DB::connection()->getDriverName(),
+                'response_time_ms' => $responseTime,
+            ],
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'unhealthy',
+            'timestamp' => now()->toIso8601String(),
+            'environment' => app()->environment(),
+            'database' => [
+                'status' => 'disconnected',
+                'error' => $e->getMessage(),
+            ],
+        ], 500);
+    }
+})->name('health.check');
